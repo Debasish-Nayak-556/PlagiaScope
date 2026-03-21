@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlagiaScope — The World's Most Intelligent Plagiarism Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0a0f;--paper:#f4f0e8;--paper2:#ede9df;--gold:#c8973a;--gold2:#e8b95a;--crimson:#c23b3b;--teal:#2a7c6f;--teal2:#3aa88f;--text:#1a1a24;--muted:#6b6b7a;--border:rgba(10,10,15,0.1);--white:#fefefe;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--paper);color:var(--text);overflow-x:hidden;cursor:none;}
+.cursor{width:12px;height:12px;background:var(--ink);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;mix-blend-mode:multiply;}
+.cursor-ring{width:36px;height:36px;border:1px solid var(--ink);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:all 0.25s cubic-bezier(0.25,1,0.5,1);mix-blend-mode:multiply;}
+.cursor-ring.hover{transform:scale(2.5);border-color:var(--gold);background:rgba(200,151,58,0.08);}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:0.6;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:22px 60px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-family:'Clash Display',sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.5px;color:var(--ink);text-decoration:none;}
+.nav-logo em{font-style:normal;color:var(--gold);}
+.nav-links{display:flex;gap:36px;align-items:center;}
+.nav-links a{font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;letter-spacing:0.3px;transition:color 0.2s;}
+.nav-links a:hover{color:var(--ink);}
+.nav-cta{background:var(--ink)!important;color:var(--paper)!important;padding:10px 22px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s!important;letter-spacing:0.3px;}
+.nav-cta:hover{background:var(--gold)!important;color:var(--ink)!important;transform:translateY(-1px);}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px 60px 80px;position:relative;overflow:hidden;}
+.hero-bg-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Clash Display',sans-serif;font-size:clamp(100px,18vw,240px);font-weight:700;color:transparent;-webkit-text-stroke:1px rgba(10,10,15,0.055);white-space:nowrap;pointer-events:none;user-select:none;letter-spacing:-8px;animation:driftText 18s ease-in-out infinite;}
+@keyframes driftText{0%,100%{transform:translate(-50%,-50%) translateX(0)}50%{transform:translate(-50%,-50%) translateX(-30px)}}
+.hero-stamp{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--ink);padding:6px 14px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:32px;width:fit-content;animation:slideIn 0.8s cubic-bezier(0.25,1,0.5,1) forwards;opacity:0;}
+.stamp-dot{width:6px;height:6px;border-radius:50%;background:var(--ink);animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.hero-title{font-family:'Clash Display',sans-serif;font-size:clamp(50px,7vw,96px);font-weight:700;line-height:0.95;letter-spacing:-3px;max-width:900px;margin-bottom:40px;}
+.hero-title .line{display:block;overflow:hidden;}
+.hero-title .inner{display:block;animation:lineUp 0.9s cubic-bezier(0.25,1,0.5,1) forwards;opacity:0;transform:translateY(100%);}
+.hero-title .line:nth-child(1) .inner{animation-delay:0.1s;}
+.hero-title .line:nth-child(2) .inner{animation-delay:0.22s;}
+.hero-title .line:nth-child(3) .inner{animation-delay:0.34s;}
+@keyframes lineUp{to{opacity:1;transform:translateY(0);}}
+.hero-title .italic{font-style:italic;color:var(--gold);}
+.hero-title .outline{color:transparent;-webkit-text-stroke:2px var(--ink);}
+.hero-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;animation:fadeUp 1s 0.5s forwards;opacity:0;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.hero-desc{max-width:400px;font-size:16px;line-height:1.75;color:var(--muted);}
+.hero-actions{display:flex;flex-direction:column;gap:12px;align-items:flex-end;}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);padding:18px 36px;border-radius:8px;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:600;text-decoration:none;letter-spacing:-0.3px;transition:all 0.3s cubic-bezier(0.25,1,0.5,1);position:relative;overflow:hidden;}
+.btn-primary::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-100%);transition:transform 0.4s cubic-bezier(0.25,1,0.5,1);z-index:0;}
+.btn-primary:hover::before{transform:translateX(0);}
+.btn-primary:hover{color:var(--ink);}
+.btn-primary span{position:relative;z-index:1;}
+.btn-arrow{position:relative;z-index:1;transition:transform 0.3s;}
+.btn-primary:hover .btn-arrow{transform:translateX(4px);}
+.hero-note{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.5px;text-align:right;}
+.hero-stats{position:absolute;right:60px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:20px;animation:fadeUp 1s 0.7s forwards;opacity:0;}
+.stat-pill{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:160px;box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+.stat-num{font-family:'Clash Display',sans-serif;font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--ink);line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.3px;}
+.scroll-hint{position:absolute;bottom:40px;left:60px;display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;animation:fadeUp 1s 0.9s forwards;opacity:0;}
+.scroll-line{width:40px;height:1px;background:var(--muted);position:relative;overflow:hidden;}
+.scroll-line::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:1px;background:var(--gold);animation:scanLine 2s ease-in-out infinite;}
+@keyframes scanLine{to{left:200%;}}
+.marquee-strip{background:var(--ink);padding:16px 0;overflow:hidden;white-space:nowrap;}
+.marquee-inner{display:inline-flex;animation:marquee 22s linear infinite;}
+.marquee-item{font-family:'Clash Display',sans-serif;font-size:13px;font-weight:500;color:var(--paper);letter-spacing:1px;text-transform:uppercase;padding:0 32px;opacity:0.7;}
+.marquee-dot{color:var(--gold);opacity:1!important;}
+@keyframes marquee{to{transform:translateX(-50%);}}
+.section{padding:100px 60px;}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;max-width:60px;height:1px;background:var(--gold);}
+.section-title{font-family:'Clash Display',sans-serif;font-size:clamp(36px,5vw,60px);font-weight:700;letter-spacing:-2px;line-height:1;margin-bottom:60px;}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--ink);border:2px solid var(--ink);border-radius:16px;overflow:hidden;}
+.step-card{background:var(--paper);padding:40px 36px;position:relative;transition:background 0.3s;}
+.step-card:hover{background:var(--paper2);}
+.step-num{font-family:'Clash Display',sans-serif;font-size:72px;font-weight:700;letter-spacing:-4px;color:rgba(10,10,15,0.07);line-height:1;margin-bottom:16px;}
+.step-icon{width:48px;height:48px;background:var(--ink);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
+.step-title{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:12px;}
+.step-desc{font-size:14px;line-height:1.7;color:var(--muted);}
+.features-bg{background:var(--ink);}
+.features-bg .section-label{color:var(--gold);}
+.features-bg .section-label::after{background:var(--gold);}
+.features-bg .section-title{color:var(--paper);}
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.feature-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;transition:all 0.3s;position:relative;overflow:hidden;}
+.feature-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--gold),transparent);transform:scaleX(0);transform-origin:left;transition:transform 0.4s;}
+.feature-card:hover::before{transform:scaleX(1);}
+.feature-card:hover{background:rgba(255,255,255,0.07);border-color:rgba(200,151,58,0.3);}
+.feature-emoji{font-size:32px;margin-bottom:16px;}
+.feature-title{font-family:'Clash Display',sans-serif;font-size:20px;font-weight:600;color:var(--paper);letter-spacing:-0.3px;margin-bottom:10px;}
+.feature-desc{font-size:14px;color:rgba(244,240,232,0.5);line-height:1.7;}
+.demo-section{background:var(--paper2);}
+.demo-wrap{background:var(--white);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.08);}
+.demo-topbar{background:var(--ink);padding:14px 20px;display:flex;align-items:center;gap:8px;}
+.demo-dot{width:10px;height:10px;border-radius:50%;}
+.demo-url{flex:1;background:rgba(255,255,255,0.08);border-radius:6px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(244,240,232,0.5);margin-left:12px;letter-spacing:0.5px;}
+.demo-body{padding:40px;}
+.demo-score-row{display:flex;align-items:center;gap:32px;margin-bottom:32px;flex-wrap:wrap;}
+.demo-big-score{font-family:'Clash Display',sans-serif;font-size:80px;font-weight:700;letter-spacing:-4px;color:var(--teal);line-height:1;}
+.demo-verdict-title{font-family:'Clash Display',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px;margin-bottom:8px;color:var(--teal);}
+.demo-verdict-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:380px;}
+.demo-bars{display:flex;flex-direction:column;gap:12px;}
+.demo-bar-row{display:flex;align-items:center;gap:12px;}
+.demo-bar-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);width:120px;letter-spacing:0.5px;}
+.demo-bar-track{flex:1;height:6px;background:var(--paper2);border-radius:4px;overflow:hidden;}
+.demo-bar-fill{height:100%;border-radius:4px;}
+.demo-bar-val{font-family:'Clash Display',sans-serif;font-size:15px;font-weight:700;width:40px;text-align:right;}
+.demo-text-preview{margin-top:28px;padding:20px;background:var(--paper);border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2;color:var(--text);}
+.demo-hl-red{background:rgba(194,59,59,0.15);border-bottom:2px solid var(--crimson);border-radius:2px;}
+.demo-hl-gold{background:rgba(200,151,58,0.15);border-bottom:2px solid var(--gold);border-radius:2px;}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.testi-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,0.04);transition:transform 0.3s,box-shadow 0.3s;}
+.testi-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.1);}
+.testi-stars{color:var(--gold);font-size:14px;margin-bottom:14px;}
+.testi-text{font-size:14px;line-height:1.75;color:var(--text);margin-bottom:20px;font-style:italic;}
+.testi-author{display:flex;align-items:center;gap:12px;}
+.testi-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:'Clash Display',sans-serif;}
+.testi-name{font-size:13px;font-weight:600;}
+.testi-role{font-size:11px;color:var(--muted);}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:end;}
+.price-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:36px;transition:all 0.3s;}
+.price-card:hover{transform:translateY(-4px);}
+.price-card.featured{background:var(--ink);border-color:var(--ink);padding:48px 36px;position:relative;}
+.price-card.featured::before{content:'MOST POPULAR';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;padding:4px 12px;border-radius:4px;}
+.price-tier{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
+.price-card.featured .price-tier{color:rgba(244,240,232,0.5);}
+.price-amount{font-family:'Clash Display',sans-serif;font-size:52px;font-weight:700;letter-spacing:-3px;line-height:1;margin-bottom:4px;}
+.price-card.featured .price-amount{color:var(--gold);}
+.price-period{font-size:12px;color:var(--muted);margin-bottom:28px;}
+.price-card.featured .price-period{color:rgba(244,240,232,0.4);}
+.price-features{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.price-feat{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text);line-height:1.5;}
+.price-card.featured .price-feat{color:rgba(244,240,232,0.7);}
+.price-check{color:var(--teal);font-size:14px;flex-shrink:0;margin-top:1px;}
+.price-card.featured .price-check{color:var(--gold);}
+.btn-price{display:block;text-align:center;padding:14px;border-radius:8px;font-family:'Clash Display',sans-serif;font-size:15px;font-weight:600;text-decoration:none;transition:all 0.2s;letter-spacing:-0.3px;}
+.btn-price-outline{border:1.5px solid var(--ink);color:var(--ink);}
+.btn-price-outline:hover{background:var(--ink);color:var(--paper);}
+.btn-price-gold{background:var(--gold);color:var(--ink);}
+.btn-price-gold:hover{background:var(--gold2);}
+.cta-section{padding:100px 60px;background:var(--ink);text-align:center;position:relative;overflow:hidden;}
+.cta-bg-circle{position:absolute;border-radius:50%;border:1px solid rgba(200,151,58,0.12);top:50%;left:50%;animation:ctaPulse 4s ease-in-out infinite;}
+.cta-bg-circle:nth-child(1){width:600px;height:600px;transform:translate(-50%,-50%);}
+.cta-bg-circle:nth-child(2){width:380px;height:380px;transform:translate(-50%,-50%);animation-delay:-1.3s;opacity:0.7;}
+.cta-bg-circle:nth-child(3){width:180px;height:180px;transform:translate(-50%,-50%);animation-delay:-2.6s;opacity:0.4;}
+@keyframes ctaPulse{0%,100%{scale:1}50%{scale:1.06}}
+.cta-content{position:relative;z-index:1;}
+.cta-title{font-family:'Clash Display',sans-serif;font-size:clamp(40px,6vw,72px);font-weight:700;color:var(--paper);letter-spacing:-2px;line-height:1.05;margin-bottom:20px;}
+.cta-title .gold{color:var(--gold);}
+.cta-sub{font-size:16px;color:rgba(244,240,232,0.5);margin-bottom:40px;max-width:400px;margin-inline:auto;line-height:1.7;}
+footer{background:var(--ink);border-top:1px solid rgba(255,255,255,0.06);padding:48px 60px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+.footer-logo{font-family:'Clash Display',sans-serif;font-size:18px;font-weight:700;color:var(--paper);}
+.footer-logo em{font-style:normal;color:var(--gold);}
+.footer-links{display:flex;gap:28px;}
+.footer-links a{font-size:12px;color:rgba(244,240,232,0.4);text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:var(--paper);}
+.footer-copy{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(244,240,232,0.25);letter-spacing:0.5px;}
+.reveal{opacity:0;transform:translateY(32px);transition:opacity 0.7s cubic-bezier(0.25,1,0.5,1),transform 0.7s cubic-bezier(0.25,1,0.5,1);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+@media(max-width:900px){nav{padding:20px 24px;}.nav-links{display:none;}.hero{padding:120px 24px 80px;}.hero-stats{display:none;}.steps-grid,.features-grid,.testi-grid,.pricing-grid{grid-template-columns:1fr;}.section{padding:60px 24px;}.cta-section{padding:60px 24px;}footer{padding:40px 24px;flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a class="nav-logo" href="#">Plagia<em>Scope</em></a>
+  <div class="nav-links">
+    <a href="#how">How It Works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="plagiarism-checker.html" class="nav-cta">Try Free →</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg-text">ORIGINAL</div>
+  <div class="hero-stamp"><div class="stamp-dot"></div>AI Detection Engine v3.0</div>
+  <h1 class="hero-title">
+    <span class="line"><span class="inner">The Sharpest</span></span>
+    <span class="line"><span class="inner italic">Plagiarism</span></span>
+    <span class="line"><span class="inner outline">Detector.</span></span>
+  </h1>
+  <div class="hero-bottom">
+    <p class="hero-desc">Trusted by universities, publishers, and content teams worldwide. Sentence-level accuracy. Real-time source matching. Zero compromise.</p>
+    <div class="hero-actions">
+      <a href="plagiarism-checker.html" class="btn-primary"><span>Start Scanning Free</span><span class="btn-arrow">→</span></a>
+      <div class="hero-note">// No signup · Instant results</div>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-pill"><div class="stat-num" data-target="99.2" data-suffix="%">0%</div><div class="stat-label">Detection accuracy</div></div>
+    <div class="stat-pill"><div class="stat-num" data-target="2.4" data-suffix="s">0s</div><div class="stat-label">Average scan time</div></div>
+    <div class="stat-pill"><div class="stat-num" data-target="5" data-suffix="M+">0M+</div><div class="stat-label">Documents scanned</div></div>
+  </div>
+  <div class="scroll-hint"><div class="scroll-line"></div>Scroll to explore</div>
+</section>
+
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span class="marquee-item">Sentence-Level Detection</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">AI Content Analysis</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Paraphrase Detection</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Source Identification</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Originality Scoring</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Academic Integrity</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Sentence-Level Detection</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">AI Content Analysis</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Paraphrase Detection</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Source Identification</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Originality Scoring</span><span class="marquee-item marquee-dot">✦</span>
+    <span class="marquee-item">Academic Integrity</span><span class="marquee-item marquee-dot">✦</span>
+  </div>
+</div>
+
+<section class="section" id="how">
+  <div class="section-label">Process</div>
+  <h2 class="section-title reveal">Three steps to<br>total clarity.</h2>
+  <div class="steps-grid reveal">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <div class="step-icon">📋</div>
+      <div class="step-title">Paste Your Text</div>
+      <div class="step-desc">Drop in any text — essays, articles, research papers, or blog posts. Or enter a topic for quick analysis.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <div class="step-icon">🔬</div>
+      <div class="step-title">Deep AI Scan</div>
+      <div class="step-desc">Our engine tokenizes every sentence, cross-references billions of sources, and detects AI-generated patterns simultaneously.</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <div class="step-icon">📊</div>
+      <div class="step-title">Get Your Report</div>
+      <div class="step-desc">Receive a comprehensive originality report with highlighted matches, source links, and actionable recommendations.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section demo-section" id="demo">
+  <div class="section-label">Live Preview</div>
+  <h2 class="section-title reveal">See it in action.</h2>
+  <div class="demo-wrap reveal">
+    <div class="demo-topbar">
+      <div class="demo-dot" style="background:#ff5f57"></div>
+      <div class="demo-dot" style="background:#febc2e"></div>
+      <div class="demo-dot" style="background:#28c840"></div>
+      <div class="demo-url">plagiarism-checker.html — PlagiaScope Analysis Report</div>
+    </div>
+    <div class="demo-body">
+      <div class="demo-score-row">
+        <div class="demo-big-score">12%</div>
+        <div class="demo-verdict">
+          <div class="demo-verdict-title">✓ Mostly Original</div>
+          <div class="demo-verdict-sub">Your text shows high originality. Only minor similarities detected, primarily in common academic phrasing patterns.</div>
+        </div>
+      </div>
+      <div class="demo-bars">
+        <div class="demo-bar-row">
+          <div class="demo-bar-label">PLAGIARISM</div>
+          <div class="demo-bar-track"><div class="demo-bar-fill" style="width:12%;background:#c23b3b;"></div></div>
+          <div class="demo-bar-val" style="color:#c23b3b">12%</div>
+        </div>
+        <div class="demo-bar-row">
+          <div class="demo-bar-label">AI GENERATED</div>
+          <div class="demo-bar-track"><div class="demo-bar-fill" style="width:8%;background:#c8973a;"></div></div>
+          <div class="demo-bar-val" style="color:#c8973a">8%</div>
+        </div>
+        <div class="demo-bar-row">
+          <div class="demo-bar-label">ORIGINALITY</div>
+          <div class="demo-bar-track"><div class="demo-bar-fill" style="width:88%;background:#2a7c6f;"></div></div>
+          <div class="demo-bar-val" style="color:#2a7c6f">88%</div>
+        </div>
+      </div>
+      <div class="demo-text-preview">
+        The research demonstrates <span class="demo-hl-gold">significant advances in natural language processing</span> that have emerged over the past decade. Unlike previous approaches, this methodology offers a fundamentally different framework for understanding semantic relationships. <span class="demo-hl-red">The results were statistically significant with a p-value less than 0.05, confirming the hypothesis.</span> Future work will explore additional parameters.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section features-bg" id="features">
+  <div class="section-label">Capabilities</div>
+  <h2 class="section-title reveal">Everything you need<br>to verify originality.</h2>
+  <div class="features-grid reveal">
+    <div class="feature-card"><div class="feature-emoji">🧬</div><div class="feature-title">Sentence-Level Precision</div><div class="feature-desc">Every sentence is analyzed independently. You see exactly which lines are flagged and why — not just a vague score.</div></div>
+    <div class="feature-card"><div class="feature-emoji">🤖</div><div class="feature-title">AI Content Detection</div><div class="feature-desc">Identifies patterns characteristic of GPT, Claude, Gemini, and other LLMs. Separate score for human vs AI authorship.</div></div>
+    <div class="feature-card"><div class="feature-emoji">🔄</div><div class="feature-title">Paraphrase Detection</div><div class="feature-desc">Catches content that's been reworded to avoid detection. Our semantic analysis goes beyond surface-level matching.</div></div>
+    <div class="feature-card"><div class="feature-emoji">🌐</div><div class="feature-title">Source Identification</div><div class="feature-desc">Pinpoints likely original sources with URLs, match percentages, and excerpts so you can verify and properly cite.</div></div>
+    <div class="feature-card"><div class="feature-emoji">⚡</div><div class="feature-title">Instant Results</div><div class="feature-desc">Full analysis in under 3 seconds. No queues, no waiting, no subscriptions required to get your complete report.</div></div>
+    <div class="feature-card"><div class="feature-emoji">💡</div><div class="feature-title">Actionable Recommendations</div><div class="feature-desc">Don't just learn what's wrong — learn how to fix it. Get specific, prioritized guidance for improving originality.</div></div>
+  </div>
+</section>
+
+<section class="section" id="testimonials">
+  <div class="section-label">Social Proof</div>
+  <h2 class="section-title reveal">Trusted by creators<br>&amp; academics alike.</h2>
+  <div class="testi-grid reveal">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"Finally a tool that explains <em>why</em> something is flagged. The sentence-level breakdown is a game changer for my students."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#e8f5e9;color:#2a7c6f">P</div>
+        <div><div class="testi-name">Prof. Ananya Rao</div><div class="testi-role">Head of English, IIT Delhi</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"We check every piece before publishing. PlagiaScope is 3x faster than what we used before and far more accurate."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#fff3e0;color:#c8973a">M</div>
+        <div><div class="testi-name">Marcus Chen</div><div class="testi-role">Founder, ContentFirst Agency</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"The AI detection feature alone is worth it. In an era of ChatGPT submissions, this is the most reliable tool I've found."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:#fce4ec;color:#c23b3b">S</div>
+        <div><div class="testi-name">Shreya Mehta</div><div class="testi-role">Senior Editor, HarperCollins India</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing" style="background:var(--paper2)">
+  <div class="section-label">Plans</div>
+  <h2 class="section-title reveal">Simple, honest pricing.</h2>
+  <div class="pricing-grid reveal">
+    <div class="price-card">
+      <div class="price-tier">Starter</div>
+      <div class="price-amount">Free</div>
+      <div class="price-period">Forever free · No card needed</div>
+      <div class="price-features">
+        <div class="price-feat"><span class="price-check">✓</span>5 scans per day</div>
+        <div class="price-feat"><span class="price-check">✓</span>Up to 1,000 words per scan</div>
+        <div class="price-feat"><span class="price-check">✓</span>Basic plagiarism score</div>
+        <div class="price-feat"><span class="price-check">✓</span>Sentence breakdown</div>
+      </div>
+      <a href="plagiarism-checker.html" class="btn-price btn-price-outline">Get Started</a>
+    </div>
+    <div class="price-card featured">
+      <div class="price-tier">Pro</div>
+      <div class="price-amount">₹499</div>
+      <div class="price-period">per month · Billed annually</div>
+      <div class="price-features">
+        <div class="price-feat"><span class="price-check">✓</span>Unlimited scans</div>
+        <div class="price-feat"><span class="price-check">✓</span>Up to 10,000 words per scan</div>
+        <div class="price-feat"><span class="price-check">✓</span>AI content detection</div>
+        <div class="price-feat"><span class="price-check">✓</span>Paraphrase detection</div>
+        <div class="price-feat"><span class="price-check">✓</span>Source identification</div>
+        <div class="price-feat"><span class="price-check">✓</span>Downloadable reports</div>
+      </div>
+      <a href="plagiarism-checker.html" class="btn-price btn-price-gold">Start Pro Trial</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Enterprise</div>
+      <div class="price-amount">Custom</div>
+      <div class="price-period">For teams &amp; institutions</div>
+      <div class="price-features">
+        <div class="price-feat"><span class="price-check">✓</span>Everything in Pro</div>
+        <div class="price-feat"><span class="price-check">✓</span>API access</div>
+        <div class="price-feat"><span class="price-check">✓</span>Bulk upload support</div>
+        <div class="price-feat"><span class="price-check">✓</span>LMS integrations</div>
+        <div class="price-feat"><span class="price-check">✓</span>Priority support</div>
+      </div>
+      <a href="#" class="btn-price btn-price-outline">Contact Sales</a>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-bg-circle"></div>
+  <div class="cta-bg-circle"></div>
+  <div class="cta-bg-circle"></div>
+  <div class="cta-content">
+    <h2 class="cta-title">Your words.<br><span class="gold">Verified.</span></h2>
+    <p class="cta-sub">Join thousands of writers, students, and publishers who trust PlagiaScope every day.</p>
+    <a href="plagiarism-checker.html" class="btn-primary" style="display:inline-flex;margin:0 auto"><span>Check My Text Now</span><span class="btn-arrow">→</span></a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Plagia<em>Scope</em></div>
+  <div class="footer-links">
+    <a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">API</a><a href="#">Contact</a>
+  </div>
+  <div class="footer-copy">© 2025 PlagiaScope · All rights reserved</div>
+</footer>
+
+<script>
+// Cursor
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx-6+'px';cursor.style.top=my-6+'px';});
+function animRing(){rx+=(mx-rx-18)*0.12;ry+=(my-ry-18)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing);}
+animRing();
+document.querySelectorAll('a,button,.testi-card,.feature-card,.price-card,.step-card').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+// Reveal
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');}),{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
+// Counter
+function animCount(el,target,suffix){
+  let v=0,step=target/60;
+  const t=setInterval(()=>{v+=step;if(v>=target){v=target;clearInterval(t);}el.textContent=(Number.isInteger(target)?Math.round(v):v.toFixed(1))+suffix;},16);
+}
+const statObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.stat-num[data-target]').forEach(n=>{
+        const t=parseFloat(n.dataset.target),s=n.dataset.suffix||'';
+        animCount(n,t,s);
+        delete n.dataset.target;
+      });
+      statObs.unobserve(e.target);
+    }
+  });
+},{threshold:0.5});
+const statsEl=document.querySelector('.hero-stats');
+if(statsEl)statObs.observe(statsEl);
+</script>
+</body>
+</html>

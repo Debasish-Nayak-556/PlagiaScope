@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlagiaScope — Plagiarism Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0a0f;--paper:#f4f0e8;--paper2:#ede9df;--gold:#c8973a;--gold2:#e8b95a;--crimson:#c23b3b;--teal:#2a7c6f;--text:#1a1a24;--muted:#6b6b7a;--border:rgba(10,10,15,0.12);--white:#fefefe;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--paper);color:var(--text);overflow-x:hidden;cursor:none;min-height:100vh;}
+.cursor{width:10px;height:10px;background:var(--ink);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;mix-blend-mode:multiply;}
+.cursor-ring{width:32px;height:32px;border:1px solid var(--ink);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:all 0.22s cubic-bezier(0.25,1,0.5,1);mix-blend-mode:multiply;}
+.cursor-ring.hv{transform:scale(2.2);border-color:var(--gold);background:rgba(200,151,58,0.07);}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:500;opacity:0.5;}
+nav{position:sticky;top:0;z-index:100;background:rgba(244,240,232,0.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:16px 48px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-family:'Clash Display',sans-serif;font-size:18px;font-weight:700;letter-spacing:-0.5px;color:var(--ink);text-decoration:none;}
+.nav-logo em{font-style:normal;color:var(--gold);}
+.nav-back{font-size:12px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.2s;font-family:'JetBrains Mono',monospace;letter-spacing:0.3px;}
+.nav-back:hover{color:var(--ink);}
+.page{max-width:960px;margin:0 auto;padding:48px 32px 100px;}
+.page-hero{margin-bottom:36px;opacity:0;animation:fadeUp 0.7s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.eyebrow-pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:ep 1.5s infinite;}
+@keyframes ep{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.75)}}
+.page-title{font-family:'Clash Display',sans-serif;font-size:clamp(28px,4vw,46px);font-weight:700;letter-spacing:-1.5px;line-height:1.02;}
+.page-title span{color:var(--gold);}
+/* Input */
+.icard{background:var(--white);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:18px;opacity:0;animation:fadeUp 0.7s 0.12s forwards;box-shadow:0 4px 24px rgba(10,10,15,0.05);transition:border-color 0.3s,box-shadow 0.3s;}
+.icard:focus-within{border-color:rgba(200,151,58,0.45);box-shadow:0 8px 40px rgba(200,151,58,0.1);}
+.itabs{display:flex;border-bottom:1.5px solid var(--border);}
+.itab{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:14px 22px;background:none;border:none;border-right:1px solid var(--border);color:var(--muted);cursor:none;position:relative;transition:color 0.2s;}
+.itab:last-child{border-right:none;}
+.itab.on{color:var(--gold);}
+.itab.on::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--gold);}
+.ipanel{display:none;padding:24px 28px 16px;}
+.ipanel.on{display:block;}
+textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.9;resize:none;min-height:210px;caret-color:var(--gold);}
+textarea::placeholder{color:var(--muted);}
+.urlinput{width:100%;background:var(--paper);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;cursor:none;}
+.urlinput:focus{border-color:var(--gold);}
+.urlinput::placeholder{color:var(--muted);}
+.urlhint{margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.3px;}
+.ifooter{display:flex;align-items:center;justify-content:space-between;padding:13px 28px;border-top:1px solid var(--border);background:rgba(10,10,15,0.018);}
+.wc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+.controls{display:flex;gap:8px;align-items:center;}
+.pills{display:flex;gap:5px;}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:none;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;}
+.pill.on{background:rgba(200,151,58,0.1);border-color:var(--gold);color:var(--gold);}
+.sbtn{background:var(--ink);color:var(--paper);border:none;padding:12px 24px;border-radius:8px;font-family:'Clash Display',sans-serif;font-size:15px;font-weight:600;cursor:none;display:flex;align-items:center;gap:7px;transition:all 0.28s cubic-bezier(0.25,1,0.5,1);letter-spacing:-0.3px;position:relative;overflow:hidden;}
+.sbtn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-105%);transition:transform 0.38s cubic-bezier(0.25,1,0.5,1);z-index:0;}
+.sbtn:hover::before{transform:translateX(0);}
+.sbtn:hover{color:var(--ink);}
+.sbtn>*{position:relative;z-index:1;}
+.sbtn:disabled{opacity:0.42;cursor:not-allowed;}
+.sbtn:disabled::before{display:none;}
+.sbtn svg{width:14px;height:14px;}
+/* Error */
+.errbar{display:none;background:rgba(194,59,59,0.07);border:1px solid rgba(194,59,59,0.22);border-radius:10px;padding:13px 20px;color:var(--crimson);font-family:'JetBrains Mono',monospace;font-size:11px;margin-bottom:18px;letter-spacing:0.3px;}
+.errbar.on{display:block;animation:fadeUp 0.3s forwards;}
+/* Loading */
+.loading{display:none;text-align:center;padding:72px 32px;}
+.loading.on{display:block;animation:fadeUp 0.35s forwards;}
+.scanwrap{width:96px;height:96px;margin:0 auto 26px;position:relative;}
+.sring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;animation:spin 1.5s linear infinite;}
+.sring:nth-child(1){border-top-color:var(--gold);animation-duration:1s;}
+.sring:nth-child(2){inset:10px;border-right-color:var(--teal);animation-duration:1.6s;animation-direction:reverse;}
+.sring:nth-child(3){inset:20px;border-bottom-color:var(--crimson);animation-duration:2.2s;}
+.scenter{position:absolute;inset:30px;border-radius:50%;background:radial-gradient(circle,rgba(200,151,58,0.12),transparent);display:flex;align-items:center;justify-content:center;font-size:18px;animation:br 1s ease-in-out infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes br{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.ltitle{font-family:'Clash Display',sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.5px;margin-bottom:5px;}
+.lsub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.5px;}
+.steptrack{display:flex;flex-direction:column;gap:5px;max-width:270px;margin:22px auto 0;}
+.si{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);background:var(--paper2);transition:all 0.3s;letter-spacing:0.2px;}
+.si.active{color:var(--gold);background:rgba(200,151,58,0.1);}
+.si.done{color:var(--teal);background:rgba(42,124,111,0.07);}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.si.active .sdot{animation:ep 0.8s infinite;}
+/* Results */
+#res{display:none;}
+#res.on{display:block;animation:fadeUp 0.5s forwards;}
+/* Score */
+.scard{background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:34px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 4px 24px rgba(10,10,15,0.05);}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vcol,linear-gradient(90deg,var(--teal),var(--gold)));}
+.sgrid{display:grid;grid-template-columns:auto 1fr;gap:36px;align-items:center;}
+.sringwrap{position:relative;width:126px;height:126px;}
+.ssvg{width:126px;height:126px;transform:rotate(-90deg);}
+.strk{fill:none;stroke:var(--paper2);stroke-width:8;}
+.sfill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1.6s cubic-bezier(0.25,1,0.5,1);}
+.smid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.spct{font-family:'Clash Display',sans-serif;font-size:32px;font-weight:700;letter-spacing:-2px;line-height:1;}
+.slbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.sverdict{font-family:'Clash Display',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px;margin-bottom:8px;}
+.sdesc{font-size:13.5px;color:var(--muted);line-height:1.65;margin-bottom:20px;max-width:460px;}
+.sstats{display:flex;gap:24px;flex-wrap:wrap;}
+.ss{display:flex;flex-direction:column;gap:3px;}
+.ssv{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:700;letter-spacing:-1px;}
+.ssl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;}
+/* Metrics */
+.mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.mc{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;transition:all 0.25s;box-shadow:0 2px 12px rgba(10,10,15,0.04);}
+.mc:hover{border-color:rgba(200,151,58,0.3);transform:translateY(-2px);}
+.mico{font-size:22px;margin-bottom:10px;}
+.mv{font-family:'Clash Display',sans-serif;font-size:26px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;}
+.ml{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.mbar{margin-top:12px;height:3px;background:var(--paper2);border-radius:2px;overflow:hidden;}
+.mfill{height:100%;border-radius:2px;transition:width 1.3s cubic-bezier(0.25,1,0.5,1);}
+/* Accordion */
+.acc{margin-bottom:12px;}
+.ahead{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;cursor:none;transition:all 0.22s;user-select:none;box-shadow:0 2px 12px rgba(10,10,15,0.04);}
+.ahead:hover{border-color:rgba(200,151,58,0.38);}
+.ahead.open{border-radius:14px 14px 0 0;border-color:rgba(200,151,58,0.38);border-bottom-color:transparent;}
+.atitle{display:flex;align-items:center;gap:10px;font-family:'Clash Display',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.3px;}
+.aico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.achev{font-size:14px;color:var(--muted);transition:transform 0.28s;font-style:normal;}
+.ahead.open .achev{transform:rotate(180deg);}
+.abody{display:none;background:var(--white);border:1.5px solid rgba(200,151,58,0.38);border-top:none;border-radius:0 0 14px 14px;padding:22px;}
+.abody.open{display:block;animation:slideD 0.25s cubic-bezier(0.25,1,0.5,1);}
+@keyframes slideD{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+/* Text view */
+.legrow{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+.legit{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.legsw{width:10px;height:10px;border-radius:2px;}
+.tv{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.1;background:var(--paper);border-radius:10px;padding:20px;color:var(--text);}
+.hp{background:rgba(194,59,59,0.13);border-bottom:2px solid var(--crimson);border-radius:2px;cursor:help;}
+.hs{background:rgba(200,151,58,0.11);border-bottom:2px solid var(--gold);border-radius:2px;}
+/* Sentences */
+.slist{display:flex;flex-direction:column;gap:7px;}
+.sitem{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;background:var(--paper);border-left:3px solid transparent;}
+.sitem.f{border-left-color:var(--crimson);}
+.sitem.w{border-left-color:var(--gold);}
+.sitem.c{border-left-color:var(--teal);}
+.stag{font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;margin-top:3px;flex-shrink:0;}
+.tp{background:rgba(194,59,59,0.12);color:var(--crimson);}
+.ts{background:rgba(200,151,58,0.1);color:var(--gold);}
+.to{background:rgba(42,124,111,0.09);color:var(--teal);}
+.stxt{font-size:13px;line-height:1.7;flex:1;}
+.srsn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;}
+/* Sources */
+.srclist{display:flex;flex-direction:column;gap:10px;}
+.srcitem{display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--paper);border-radius:10px;border:1px solid var(--border);transition:border-color 0.2s;}
+.srcitem:hover{border-color:rgba(200,151,58,0.3);}
+.srcrank{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:18px;}
+.srcinfo{flex:1;}
+.srctitle{font-size:13px;font-weight:600;margin-bottom:3px;}
+.srcurl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--teal);text-decoration:none;display:block;margin-bottom:5px;}
+.srcurl:hover{text-decoration:underline;}
+.srcex{font-size:12px;color:var(--muted);line-height:1.6;}
+.srcpct{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(194,59,59,0.09);color:var(--crimson);white-space:nowrap;align-self:flex-start;margin-top:2px;}
+/* Recs */
+.reclist{display:flex;flex-direction:column;gap:9px;}
+.recitem{display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--paper);border-radius:10px;}
+.recico{font-size:20px;flex-shrink:0;margin-top:2px;}
+.rectitle{font-family:'Clash Display',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.3px;margin-bottom:3px;}
+.recbody{font-size:12.5px;color:var(--muted);line-height:1.65;}
+/* Reset */
+.rbtn{display:flex;align-items:center;gap:7px;background:none;border:1.5px solid var(--border);color:var(--muted);padding:11px 22px;border-radius:8px;font-family:'Clash Display',sans-serif;font-size:14px;font-weight:600;cursor:none;transition:all 0.2s;margin:28px auto 0;letter-spacing:-0.3px;}
+.rbtn:hover{border-color:var(--ink);color:var(--ink);}
+@media(max-width:660px){nav{padding:14px 18px;}.page{padding:28px 14px 80px;}.sgrid{grid-template-columns:1fr;text-align:center;}.sringwrap{margin:0 auto;}.sstats{justify-content:center;}.mrow{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="curR"></div>
+
+<nav>
+  <a class="nav-logo" href="plagiarism-website.html">Plagia<em>Scope</em></a>
+  <a class="nav-back" href="plagiarism-website.html">← Back to Home</a>
+</nav>
+
+<div class="page">
+
+  <div class="page-hero">
+    <div class="eyebrow"><div class="eyebrow-pulse"></div>Originality Analysis Engine</div>
+    <h1 class="page-title">Check Your Text for<br><span>Plagiarism</span> Instantly</h1>
+  </div>
+
+  <div class="icard" id="icard">
+    <div class="itabs">
+      <button class="itab on" onclick="switchTab('text',this)">Text Input</button>
+      <button class="itab" onclick="switchTab('url',this)">Topic / URL</button>
+    </div>
+    <div id="tp-text" class="ipanel on">
+      <textarea id="mainTxt" placeholder="Paste your essay, article, research paper, or any text here. We'll scan every sentence and return a precise originality report…" rows="9" oninput="updateWC()"></textarea>
+    </div>
+    <div id="tp-url" class="ipanel">
+      <input class="urlinput" id="urlIn" type="text" placeholder="Enter a topic, phrase, or article title to analyze for originality…">
+      <div class="urlhint">// Enter any topic and we'll assess typical originality patterns for that subject</div>
+    </div>
+    <div class="ifooter">
+      <div class="wc" id="wc">0 words</div>
+      <div class="controls">
+        <div class="pills">
+          <button class="pill on" onclick="tog('deep',this)">Deep</button>
+          <button class="pill on" onclick="tog('ai',this)">AI Detect</button>
+          <button class="pill on" onclick="tog('para',this)">Paraphrase</button>
+        </div>
+        <button class="sbtn" id="sbtn" onclick="doScan()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span>Scan Now</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="errbar" id="err"></div>
+
+  <div class="loading" id="load">
+    <div class="scanwrap">
+      <div class="sring"></div><div class="sring"></div><div class="sring"></div>
+      <div class="scenter">🔍</div>
+    </div>
+    <div class="ltitle">Analyzing your text…</div>
+    <div class="lsub">Deep plagiarism detection in progress</div>
+    <div class="steptrack">
+      <div class="si active" id="z1"><div class="sdot"></div>Tokenizing &amp; parsing text</div>
+      <div class="si" id="z2"><div class="sdot"></div>Analyzing sentence patterns</div>
+      <div class="si" id="z3"><div class="sdot"></div>Cross-referencing sources</div>
+      <div class="si" id="z4"><div class="sdot"></div>Detecting AI signatures</div>
+      <div class="si" id="z5"><div class="sdot"></div>Building originality report</div>
+    </div>
+  </div>
+
+  <div id="res">
+    <div class="scard" id="scard">
+      <div class="sgrid">
+        <div class="sringwrap">
+          <svg class="ssvg" viewBox="0 0 126 126">
+            <circle class="strk" cx="63" cy="63" r="52"/>
+            <circle class="sfill" id="sarc" cx="63" cy="63" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+          </svg>
+          <div class="smid"><div class="spct" id="spct">0%</div><div class="slbl">Plagiarism</div></div>
+        </div>
+        <div>
+          <div class="sverdict" id="sver">—</div>
+          <div class="sdesc" id="sdesc">—</div>
+          <div class="sstats">
+            <div class="ss"><div class="ssv" id="storig">—</div><div class="ssl">Original</div></div>
+            <div class="ss"><div class="ssv" id="stsim">—</div><div class="ssl">Similar</div></div>
+            <div class="ss"><div class="ssv" id="stflag">—</div><div class="ssl">Flagged</div></div>
+            <div class="ss"><div class="ssv" id="sttot">—</div><div class="ssl">Sentences</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mrow">
+      <div class="mc"><div class="mico">🔴</div><div class="mv" id="mp">—</div><div class="ml">Plagiarism Score</div><div class="mbar"><div class="mfill" id="fp" style="width:0%;background:var(--crimson)"></div></div></div>
+      <div class="mc"><div class="mico">🤖</div><div class="mv" id="ma">—</div><div class="ml">AI-Generated Prob.</div><div class="mbar"><div class="mfill" id="fa" style="width:0%;background:var(--gold)"></div></div></div>
+      <div class="mc"><div class="mico">✅</div><div class="mv" id="mo">—</div><div class="ml">Originality Score</div><div class="mbar"><div class="mfill" id="fo" style="width:0%;background:var(--teal)"></div></div></div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead open" onclick="togAcc(this)">
+        <div class="atitle"><div class="aico" style="background:rgba(200,151,58,0.1)">📝</div>Highlighted Text View</div>
+        <em class="achev">▾</em>
+      </div>
+      <div class="abody open">
+        <div class="legrow">
+          <div class="legit"><div class="legsw" style="background:rgba(194,59,59,0.45)"></div>Plagiarized</div>
+          <div class="legit"><div class="legsw" style="background:rgba(200,151,58,0.4)"></div>Possibly Similar</div>
+          <div class="legit"><div class="legsw" style="background:rgba(10,10,15,0.08)"></div>Original</div>
+        </div>
+        <div class="tv" id="hltext"></div>
+      </div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead" onclick="togAcc(this)">
+        <div class="atitle"><div class="aico" style="background:rgba(42,124,111,0.1)">🧬</div>Sentence-by-Sentence Breakdown</div>
+        <em class="achev">▾</em>
+      </div>
+      <div class="abody"><div class="slist" id="sentlist"></div></div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead" onclick="togAcc(this)">
+        <div class="atitle"><div class="aico" style="background:rgba(194,59,59,0.07)">🌐</div>Potential Sources</div>
+        <em class="achev">▾</em>
+      </div>
+      <div class="abody"><div class="srclist" id="srclist"></div></div>
+    </div>
+
+    <div class="acc">
+      <div class="ahead" onclick="togAcc(this)">
+        <div class="atitle"><div class="aico" style="background:rgba(42,124,111,0.07)">💡</div>Recommendations</div>
+        <em class="achev">▾</em>
+      </div>
+      <div class="abody"><div class="reclist" id="reclist"></div></div>
+    </div>
+
+    <button class="rbtn" onclick="resetAll()">↺&nbsp;&nbsp;New Check</button>
+  </div>
+
+</div>
+
+<script>
+// Cursor
+const C=document.getElementById('cur'),R=document.getElementById('curR');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;C.style.left=mx-5+'px';C.style.top=my-5+'px';});
+(function loop(){rx+=(mx-rx-16)*0.12;ry+=(my-ry-16)*0.12;R.style.left=rx+'px';R.style.top=ry+'px';requestAnimationFrame(loop);})();
+document.querySelectorAll('a,button,.ahead,.srcitem').forEach(el=>{
+  el.addEventListener('mouseenter',()=>R.classList.add('hv'));
+  el.addEventListener('mouseleave',()=>R.classList.remove('hv'));
+});
+let aTab='text',opts={deep:true,ai:true,para:true};
+function switchTab(t,btn){
+  aTab=t;
+  document.querySelectorAll('.itab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.ipanel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tp-'+t).classList.add('on');
+}
+function tog(k,btn){opts[k]=!opts[k];btn.classList.toggle('on');}
+function updateWC(){
+  const t=document.getElementById('mainTxt').value.trim();
+  const w=t?t.split(/\s+/).length:0;
+  document.getElementById('wc').textContent=w+' word'+(w!==1?'s':'');
+}
+function showErr(m){const e=document.getElementById('err');e.textContent='⚠ '+m;e.classList.add('on');}
+function hideErr(){document.getElementById('err').classList.remove('on');}
+async function stepAnim(){
+  const ids=['z1','z2','z3','z4','z5'];
+  for(let i=0;i<ids.length;i++){
+    await new Promise(r=>setTimeout(r,680));
+    if(i>0&&document.getElementById(ids[i-1])){document.getElementById(ids[i-1]).className='si done';}
+    if(document.getElementById(ids[i])){document.getElementById(ids[i]).className='si active';}
+  }
+}
+function togAcc(h){
+  const b=h.nextElementSibling;
+  h.classList.toggle('open');
+  b.classList.toggle('open');
+}
+async function doScan(){
+  hideErr();
+  let input='';
+  if(aTab==='text'){
+    input=document.getElementById('mainTxt').value.trim();
+    if(input.length<30){showErr('Please enter at least 30 characters for meaningful analysis.');return;}
+  } else {
+    const u=document.getElementById('urlIn').value.trim();
+    if(!u){showErr('Please enter a topic or URL.');return;}
+    input='[Topic/URL]: '+u;
+  }
+  document.getElementById('res').classList.remove('on');
+  document.getElementById('load').classList.add('on');
+  document.getElementById('sbtn').disabled=true;
+  ['z1','z2','z3','z4','z5'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='si';});
+  document.getElementById('z1').className='si active';
+  stepAnim();
+  const enabled=Object.entries(opts).filter(([,v])=>v).map(([k])=>k).join(', ');
+  const prompt=`You are an expert plagiarism detection AI. Analyze this text carefully and return ONLY valid JSON — no markdown, no code fences, no preamble.
+
+TEXT:
+"""
+${input}
+"""
+ENABLED OPTIONS: ${enabled}
+
+Return exactly this JSON structure:
+{"plagiarismScore":<0-100>,"aiGeneratedProbability":<0-100>,"originalityScore":<0-100>,"verdict":"<short verdict e.g. Mostly Original / High Plagiarism Risk>","verdictDescription":"<2-3 sentence detailed explanation>","sentences":[{"text":"<sentence>","status":"original"|"similar"|"plagiarized","confidence":<0-100>,"reason":"<explain if not original, else empty string>"}],"sources":[{"title":"<source title>","url":"<plausible realistic URL>","matchPercentage":<0-100>,"excerpt":"<brief excerpt that matches>"}],"recommendations":[{"icon":"<single emoji>","title":"<short title>","body":"<specific actionable advice>"}],"summary":{"totalSentences":<n>,"flaggedSentences":<n>,"similarSentences":<n>,"originalSentences":<n>}}
+
+ANALYSIS RULES:
+1. Analyze EVERY sentence independently and classify it
+2. "plagiarized" = clearly copied verbatim or near-verbatim from known sources
+3. "similar" = common/generic phrasing that appears widely, possibly paraphrased
+4. "original" = genuinely unique expression
+5. AI probability: assess writing style uniformity, predictable transitions, lack of personal voice
+6. Sources: provide 2-5 realistic, plausible sources with real domains where this content could exist
+7. Recommendations: give 3-4 highly specific, actionable improvements
+8. If input starts with [Topic/URL], analyze typical content patterns for that domain/topic`;
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:3000,messages:[{role:"user",content:prompt}]})
+    });
+    const data=await r.json();
+    if(!r.ok||data.error)throw new Error(data.error?.message||'API error');
+    let raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    let result;
+    try{result=JSON.parse(raw);}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)result=JSON.parse(m[0]);else throw new Error('Could not parse response');}
+    render(result);
+  }catch(err){
+    document.getElementById('load').classList.remove('on');
+    document.getElementById('sbtn').disabled=false;
+    showErr('Analysis failed: '+(err.message||'Please try again.'));
+  }
+}
+function render(d){
+  document.getElementById('load').classList.remove('on');
+  document.getElementById('sbtn').disabled=false;
+  const plag=Math.round(d.plagiarismScore||0);
+  const ai=Math.round(d.aiGeneratedProbability||0);
+  const orig=Math.round(d.originalityScore||100-plag);
+  let col,barG;
+  if(plag<20){col='#2a7c6f';barG='linear-gradient(90deg,#2a7c6f,#3aa88f)';}
+  else if(plag<50){col='#c8973a';barG='linear-gradient(90deg,#c8973a,#e8b95a)';}
+  else{col='#c23b3b';barG='linear-gradient(90deg,#c23b3b,#e8544a)';}
+  const arc=document.getElementById('sarc');
+  const circ=326.7;
+  arc.style.stroke=col;
+  setTimeout(()=>{
+    arc.style.strokeDashoffset=circ-(plag/100)*circ;
+    document.getElementById('spct').textContent=plag+'%';
+    document.getElementById('spct').style.color=col;
+    setTimeout(()=>{
+      document.getElementById('fp').style.width=plag+'%';
+      document.getElementById('fa').style.width=ai+'%';
+      document.getElementById('fo').style.width=orig+'%';
+    },200);
+  },80);
+  document.getElementById('scard').style.setProperty('--vcol',barG);
+  document.getElementById('sver').textContent=d.verdict||'Complete';
+  document.getElementById('sver').style.color=col;
+  document.getElementById('sdesc').textContent=d.verdictDescription||'';
+  document.getElementById('mp').textContent=plag+'%';
+  document.getElementById('ma').textContent=ai+'%';
+  document.getElementById('mo').textContent=orig+'%';
+  const s=d.summary||{};
+  document.getElementById('storig').textContent=s.originalSentences??'—';
+  document.getElementById('stsim').textContent=s.similarSentences??'—';
+  document.getElementById('stflag').textContent=s.flaggedSentences??'—';
+  document.getElementById('sttot').textContent=s.totalSentences??'—';
+  // Highlighted
+  const sents=d.sentences||[];
+  let hl='';
+  sents.forEach(s=>{
+    const t=s.text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if(s.status==='plagiarized')hl+=`<span class="hp" title="${s.reason||''}">${t}</span> `;
+    else if(s.status==='similar')hl+=`<span class="hs" title="${s.reason||''}">${t}</span> `;
+    else hl+=t+' ';
+  });
+  document.getElementById('hltext').innerHTML=hl||'<span style="color:var(--muted)">No text to display.</span>';
+  // Sentences
+  const sl=document.getElementById('sentlist');sl.innerHTML='';
+  sents.forEach(s=>{
+    const cls=s.status==='plagiarized'?'f':s.status==='similar'?'w':'c';
+    const tc=s.status==='plagiarized'?'tp':s.status==='similar'?'ts':'to';
+    const tl=s.status==='plagiarized'?'⚠ Flagged':s.status==='similar'?'~ Similar':'✓ Original';
+    sl.innerHTML+=`<div class="sitem ${cls}"><span class="stag ${tc}">${tl}</span><div><div class="stxt">${s.text}</div>${s.reason?`<div class="srsn">// ${s.reason}</div>`:''}</div></div>`;
+  });
+  // Sources
+  const srcEl=document.getElementById('srclist');srcEl.innerHTML='';
+  const srcs=d.sources||[];
+  if(!srcs.length){srcEl.innerHTML='<div style="color:var(--muted);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:8px">No specific sources identified.</div>';}
+  else srcs.forEach((src,i)=>{
+    srcEl.innerHTML+=`<div class="srcitem"><div class="srcrank">#${i+1}</div><div class="srcinfo"><div class="srctitle">${src.title||'Unknown Source'}</div><a class="srcurl" href="${src.url||'#'}" target="_blank" rel="noopener">${src.url||'—'}</a><div class="srcex">${src.excerpt||''}</div></div><div class="srcpct">${src.matchPercentage||0}% match</div></div>`;
+  });
+  // Recs
+  const rl=document.getElementById('reclist');rl.innerHTML='';
+  (d.recommendations||[]).forEach(r=>{
+    rl.innerHTML+=`<div class="recitem"><div class="recico">${r.icon||'💡'}</div><div><div class="rectitle">${r.title}</div><div class="recbody">${r.body}</div></div></div>`;
+  });
+  document.getElementById('res').classList.add('on');
+  document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function resetAll(){
+  document.getElementById('res').classList.remove('on');
+  document.getElementById('mainTxt').value='';
+  document.getElementById('urlIn').value='';
+  updateWC();hideErr();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

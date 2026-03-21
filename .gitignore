@@ -1,0 +1,21 @@
+# ============================================
+# 🔒 Files to NEVER upload to GitHub
+# ============================================
+
+# Environment variables — contains API key!
+.env
+
+# Node modules — too large, reinstall with npm install
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
